@@ -6,7 +6,8 @@ using Microsoft.Extensions.Hosting;
 namespace CoreProxy
 {
 
-    public record MyClass(string UserName, int Index);
+  
+
     public class Program
     {
 

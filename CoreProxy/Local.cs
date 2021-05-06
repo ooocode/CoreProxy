@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CoreProxy
@@ -34,8 +35,6 @@ namespace CoreProxy
             this.remoteAddress = remoteAddress;
             this.remotePort = remotePort;
 
-
-
             try
             {
                 var bind = await listenerFactory.BindAsync(new IPEndPoint(IPAddress.Parse(localListenAddress), localListenPort));
@@ -44,10 +43,10 @@ namespace CoreProxy
                 while (true)
                 {
                     ConnectionContext browser = await bind.AcceptAsync();
-                    new Task(async () =>
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(async (obj) =>
                     {
                         await TcpHandlerAsync(browser);
-                    }).Start();
+                    }));
                 }
             }
             catch (Exception ex)
@@ -66,7 +65,7 @@ namespace CoreProxy
             await using SocketConnect target = new SocketConnect();
             try
             {
-                await target.ConnectAsync(remoteAddress, remotePort,browser);
+                await target.ConnectAsync(remoteAddress, remotePort, browser);
 
                 while (true)
                 {

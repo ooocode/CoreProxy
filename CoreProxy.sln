@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreProxy", "CoreProxy\Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerWebApplication", "ServerWebApplication\ServerWebApplication.csproj", "{04E7051C-71D0-41D1-A08F-324A9677487E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsAppClient", "WinFormsAppClient\WinFormsAppClient.csproj", "{B4C35BA8-9445-4B0C-8BFA-476E18F3305B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{04E7051C-71D0-41D1-A08F-324A9677487E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04E7051C-71D0-41D1-A08F-324A9677487E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04E7051C-71D0-41D1-A08F-324A9677487E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4C35BA8-9445-4B0C-8BFA-476E18F3305B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4C35BA8-9445-4B0C-8BFA-476E18F3305B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4C35BA8-9445-4B0C-8BFA-476E18F3305B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4C35BA8-9445-4B0C-8BFA-476E18F3305B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
