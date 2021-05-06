@@ -62,11 +62,24 @@ namespace CoreProxy
         /// <param name="client"></param>
         private async Task TcpHandlerAsync(ConnectionContext browser)
         {
-            await using SocketConnect target = new SocketConnect();
             try
             {
-                await target.ConnectAsync(remoteAddress, remotePort, browser);
+                //browser-->5,1,0
+                var firstPack = (await browser.Transport.Input.ReadAsync()).Buffer;
+                if (string.Join(",", firstPack.ToArray()) != "5,1,0")
+                {
+                    throw new Exception("proxy handshake faild");
+                }
 
+                browser.Transport.Input.AdvanceTo(firstPack.GetPosition(firstPack.Length));
+
+                //server-->5,0
+                //发5 0 回到浏览器
+                await browser.Transport.Output.WriteAsync(new byte[] { 5, 0 });
+
+
+                await using SocketConnect target = new SocketConnect();
+                await target.ConnectAsync(remoteAddress, remotePort, browser);
                 while (true)
                 {
                     //浏览器普通接收
@@ -80,17 +93,8 @@ namespace CoreProxy
                     SequencePosition position = result.Buffer.Start;
                     if (buff.TryGet(ref position, out ReadOnlyMemory<byte> memory) && memory.Length > 0)
                     {
-                        // 接收到浏览器数据
-                        if (memory.Length == 3 && string.Join(",", memory.ToArray()) == "5,1,0")
-                        {
-                            //发5 0 回到浏览器
-                            await browser.Transport.Output.WriteAsync(new byte[] { 5, 0 });
-                        }
-                        else
-                        {
-                            //发送数据到服务器
-                            await target.SendAsync(memory);
-                        }
+                        //发送数据到服务器
+                        await target.SendAsync(memory);
 
                         browser.Transport.Input.AdvanceTo(buff.GetPosition(memory.Length));
                     }
