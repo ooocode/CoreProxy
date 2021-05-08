@@ -77,9 +77,18 @@ namespace CoreProxy
                 //发5 0 回到浏览器
                 await browser.Transport.Output.WriteAsync(new byte[] { 5, 0 });
 
+                //browser-->address port
+                var secondPack = (await browser.Transport.Input.ReadAsync()).Buffer;
+                if (!Socket5Utility.TryParse(secondPack.ToArray(), out var socket5Result))
+                {
+                    throw new Exception("parse socket5 proxy infomation faild");
+                }
+
+                browser.Transport.Input.AdvanceTo(secondPack.GetPosition(secondPack.Length));
 
                 await using SocketConnect target = new SocketConnect();
-                await target.ConnectAsync(remoteAddress, remotePort, browser);
+                await target.ConnectAsync(remoteAddress, remotePort, browser, System.Text.Encoding.UTF8.GetString(socket5Result.Address), socket5Result.Port);
+
                 while (true)
                 {
                     //浏览器普通接收
@@ -109,7 +118,7 @@ namespace CoreProxy
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message);
+                logger.LogError($"处理TcpHandlerAsync出现错误：{ex.InnerException?.Message ?? ex.Message}");
             }
         }
     }

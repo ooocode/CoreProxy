@@ -10,17 +10,22 @@ namespace ServerWebApplication
     public class SocketConnect : IAsyncDisposable
     {
         HubConnection hubConnection;
+        ConnectionContext browser;
 
         public SocketConnect()
         {
 
         }
 
-        public async Task ConnectAsync(string host, int port, ConnectionContext browser)
+        public async Task ConnectAsync(string host, int port, ConnectionContext browser, string socketTargetAddress, int socketTargetPort)
         {
+            this.browser = browser;
             hubConnection = new HubConnectionBuilder()
-              .WithUrl($"http://{host}:{port}/chatHub")
-              .WithAutomaticReconnect()
+              .WithUrl($"http://{host}:{port}/chatHub", options =>
+               {
+                   options.AccessTokenProvider = () => Task.FromResult($"{socketTargetAddress}:{socketTargetPort}");
+               })
+              //.WithAutomaticReconnect()
               .ConfigureLogging(builder =>
               {
                   builder.AddConsole();
@@ -28,13 +33,22 @@ namespace ServerWebApplication
               })
               .Build();
 
-            await hubConnection.StartAsync();
             hubConnection.On("ReceiveMessage", async (byte[] data) =>
             {
                 await browser.Transport.Output.WriteAsync(data);
             });
+
+            hubConnection.Closed += HubConnection_Closed;
+            await hubConnection.StartAsync();
         }
 
+        private async Task HubConnection_Closed(Exception arg)
+        {
+            if (browser != null)
+            {
+                await browser.Transport.Input.CompleteAsync();
+            }
+        }
 
         public async Task SendAsync(ReadOnlyMemory<byte> memory)
         {

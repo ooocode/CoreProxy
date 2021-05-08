@@ -8,10 +8,7 @@ using System.Threading.Tasks;
 
 namespace CoreProxy.Common
 {
-    /// <summary>
-    /// socket5信息
-    /// </summary>
-    class Socket5Info
+    public class Socket5Result
     {
         // ver 版本号 固定 0x05
         public byte Ver { get; set; }
@@ -39,7 +36,20 @@ namespace CoreProxy.Common
         /// </summary>
         public int Port { get; set; }
 
-        bool CanParse(byte[] data)
+        public override string ToString()
+        {
+            string strAddr = System.Text.Encoding.UTF8.GetString(Address);
+            return string.Format("ver={0} cmd={1} rsv={2} atype={3} address={4} port={5}", Ver, Cmd, Rsv, Atype, strAddr, Port);
+        }
+    }
+
+
+    /// <summary>
+    /// socket5信息
+    /// </summary>
+    public static class Socket5Utility
+    {
+        static bool CanParse(byte[] data)
         {
             if (data.Length > 3 && data[0] == 0x05 && data[1] == 0x01 && data[2] == 0x00)
             {
@@ -54,65 +64,68 @@ namespace CoreProxy.Common
         /// </summary>
         /// <param name="vs"></param>
         /// <returns></returns>
-        public bool TryParse(byte[] vs)
+        static public bool TryParse(byte[] vs, out Socket5Result result)
         {
             if (CanParse(vs))
             {
-                Ver = vs.Skip(0).Take(1).ToArray()[0];
-                Cmd = vs.Skip(1).Take(1).ToArray()[0];
-                Rsv = vs.Skip(2).Take(1).ToArray()[0];
-                Atype = vs.Skip(3).Take(1).ToArray()[0];
+                result = new Socket5Result();
+                result.Ver = vs.Skip(0).Take(1).ToArray()[0];
+                result.Cmd = vs.Skip(1).Take(1).ToArray()[0];
+                result.Rsv = vs.Skip(2).Take(1).ToArray()[0];
+                result.Atype = vs.Skip(3).Take(1).ToArray()[0];
 
-                if (Atype == 0x01)    //ip v4
+                if (result.Atype == 0x01)    //ip v4
                 {
-                    Address = vs.Skip(4).Take(4).ToArray();
-                    Port = BitConverter.ToInt16(vs, 8);
+                    result.Address = vs.Skip(4).Take(4).ToArray();
+                    result.Port = BitConverter.ToInt16(vs, 8);
                 }
-                else if (Atype == 0x03)   //域名
+                else if (result.Atype == 0x03)   //域名
                 {
                     int domainNameLenth = vs.Skip(4).Take(1).ToArray()[0];
-                    Address = vs.Skip(5).Take(domainNameLenth).ToArray();
+                    result.Address = vs.Skip(5).Take(domainNameLenth).ToArray();
 
                     byte[] port = vs.Skip(5 + domainNameLenth).Take(2).ToArray();
 
-                    Port = Convert.ToInt16((port[0].ToString("X2") + port[1].ToString("X2")), 16);
+                    result.Port = Convert.ToInt16((port[0].ToString("X2") + port[1].ToString("X2")), 16);
                 }
-                else if (Atype == 0x04)  //ip v6
+                else if (result.Atype == 0x04)  //ip v6
                 {
-                    Address = vs.Skip(4).Take(16).ToArray();
-                    Port = BitConverter.ToInt16(vs, 20);
+                    result.Address = vs.Skip(4).Take(16).ToArray();
+                    result.Port = BitConverter.ToInt16(vs, 20);
                 }
                 return true;
             }
+
+            result = null;
             return false;
         }
 
-        public override string ToString()
-        {
-            string strAddr = System.Text.Encoding.UTF8.GetString(Address);
-            return string.Format("ver={0} cmd={1} rsv={2} atype={3} address={4} port={5}", Ver, Cmd, Rsv, Atype, strAddr, Port);
-        }
+        //public override string ToString()
+        //{
+        //    string strAddr = System.Text.Encoding.UTF8.GetString(Address);
+        //    return string.Format("ver={0} cmd={1} rsv={2} atype={3} address={4} port={5}", Ver, Cmd, Rsv, Atype, strAddr, Port);
+        //}
 
-        public async Task<Socket> ConnectThisSocketAsync()
-        {
-            //foreach (var i in Dns.GetHostEntry(Encoding.UTF8.GetString(Address)).AddressList)
-            {
-                Socket remote = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                //try
-                {
-                    await remote.ConnectAsync(Encoding.UTF8.GetString(Address), Port);
-                    //remote.Connect(i, Port);
-                    remote.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, true);
-                    return remote;
-                }
-                //catch (Exception ex)
-                {
-                   // remote.Close();
-                    //Console.WriteLine("连接失败：" + ex.Message + " 地址：" + Encoding.UTF8.GetString(Address));
-                }
-            }
+        //public async Task<Socket> ConnectThisSocketAsync()
+        //{
+        //    //foreach (var i in Dns.GetHostEntry(Encoding.UTF8.GetString(Address)).AddressList)
+        //    {
+        //        Socket remote = new Socket(SocketType.Stream, ProtocolType.Tcp);
+        //        //try
+        //        {
+        //            await remote.ConnectAsync(Encoding.UTF8.GetString(Address), Port);
+        //            //remote.Connect(i, Port);
+        //            remote.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, true);
+        //            return remote;
+        //        }
+        //        //catch (Exception ex)
+        //        {
+        //           // remote.Close();
+        //            //Console.WriteLine("连接失败：" + ex.Message + " 地址：" + Encoding.UTF8.GetString(Address));
+        //        }
+        //    }
 
-            //throw new Exception("没有可用socket");
-        }
+        //    //throw new Exception("没有可用socket");
+        //}
     }
 }

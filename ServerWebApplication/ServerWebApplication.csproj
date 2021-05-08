@@ -9,6 +9,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DnsClient" Version="1.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Protobuf Include="Protos\user.proto">
       <GrpcServices>Server</GrpcServices>
     </Protobuf>
