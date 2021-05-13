@@ -5,59 +5,61 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace ServerWebApplication
 {
     public class SocketConnect : IDisposable
     {
-
         //TcpClient TcpClient = new TcpClient();
         private Socket socket { get; set; }
-        public Pipe pipe { get; set; }
+        //public Pipe pipe { get; set; }
 
-        public NetworkStream Stream { get; set; }
+        public Channel<byte[]> ChannelTcp { get; set; }
 
         public async Task ConnectAsync(IPAddress host, int port)
         {
-            //await TcpClient.ConnectAsync(host, port);
-            //Stream = TcpClient.GetStream();
-            pipe = new Pipe();
+            ChannelTcp = Channel.CreateUnbounded<byte[]>();
+            //pipe = new Pipe();
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await socket.ConnectAsync(host, port);
-            RecvAsync();
+            ThreadPool.QueueUserWorkItem(new WaitCallback(async (obj) =>
+            {
+                await RecvAsync();
+            }));
+
         }
 
 
         private async Task RecvAsync()
         {
-            const int minimumBufferSize = 512;
-
-            while (true)
+            try
             {
-                // 从PipeWriter至少分配512字节
-                Memory<byte> memory = pipe.Writer.GetMemory(minimumBufferSize);
+                byte[] buffer = new byte[8192];
 
-                int bytesRead = await socket.ReceiveAsync(memory, SocketFlags.None);
-                if (bytesRead == 0)
+                while (true)
                 {
-                    break;
-                }
+                    // 从PipeWriter至少分配512字节
+                    //Memory<byte> memory = pipe.Writer.GetMemory(minimumBufferSize);
 
-                // 告诉PipeWriter从套接字读取了多少
-                pipe.Writer.Advance(bytesRead);
+                    int bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
 
-                // 标记数据可用，让PipeReader读取
-                FlushResult result = await pipe.Writer.FlushAsync();
-
-                if (result.IsCompleted)
-                {
-                    break;
+                    var result = buffer.Take(bytesRead).ToArray();
+                    await ChannelTcp.Writer.WriteAsync(result);
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RecvAsync发生错误:{ex.InnerException?.Message ?? ex.Message}");
+            }
 
-            // 告诉PipeReader没有更多的数据
-            pipe.Writer.Complete();
+            ChannelTcp.Writer.Complete();
         }
 
         public async Task SendAsync(ReadOnlyMemory<byte> memory)

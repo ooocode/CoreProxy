@@ -81,18 +81,12 @@ namespace SignalRChat.Hubs
                 {
                     while (true)
                     {
-                        var readResult = await target.pipe.Reader.ReadAsync();
-                        if (readResult.Buffer.IsEmpty)
-                        {
-                            break;
-                        }
-
-                        //发往浏览器
-                        await browser.SendAsync("ReceiveMessage", readResult.Buffer.ToArray());
-                        target.pipe.Reader.AdvanceTo(readResult.Buffer.GetPosition(readResult.Buffer.Length));
+                        var readResult = await target.ChannelTcp.Reader.ReadAsync();
+                        ////发往浏览器
+                        await browser.SendAsync("ReceiveMessage", readResult);
                     }
 
-                    await target.pipe.Reader.CompleteAsync();
+                    //await target.pipe.Reader.CompleteAsync();
                 }
                 catch (Exception ex)
                 {
