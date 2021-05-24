@@ -6,11 +6,8 @@ using Microsoft.Extensions.Hosting;
 namespace CoreProxy
 {
 
-  
-
     public class Program
     {
-
         static void ShowInfomation()
         {
             Console.WriteLine("可以设置开机启动项");

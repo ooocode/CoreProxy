@@ -10,7 +10,7 @@
     <Content Remove="wwwroot\pac.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.6" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
     <PackageReference Include="System.Threading.Channels" Version="5.0.0" />
   </ItemGroup>
