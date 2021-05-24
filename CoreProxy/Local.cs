@@ -100,13 +100,13 @@ namespace CoreProxy
                     }
 
                     SequencePosition position = result.Buffer.Start;
-                    if (buff.TryGet(ref position, out ReadOnlyMemory<byte> memory) && memory.Length > 0)
+                    while (buff.TryGet(ref position, out ReadOnlyMemory<byte> memory) && memory.Length > 0)
                     {
                         //发送数据到服务器
                         await target.SendAsync(memory);
-
-                        browser.Transport.Input.AdvanceTo(buff.GetPosition(memory.Length));
                     }
+
+                    browser.Transport.Input.AdvanceTo(buff.End);
 
                     if (result.IsCompleted || result.IsCanceled)
                     {
