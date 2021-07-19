@@ -1,7 +1,8 @@
-﻿using System;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Threading.Tasks;
 
 namespace CoreProxy
 {
@@ -18,8 +19,30 @@ namespace CoreProxy
             Console.WriteLine("          --全局代理    http://127.0.0.1:520/global.txt");
         }
 
-        static void Main(string[] args)
+        private static async System.Collections.Generic.IAsyncEnumerable<int> GetVs()
         {
+            int index = 0;
+            while (true)
+            {
+                await Task.Delay(2000);
+                Console.WriteLine(DateTime.Now.ToString());
+                yield return index++;
+            }
+        }
+
+        static async Task Main(string[] args)
+        {
+            //new Task(async () =>
+            //{
+            //    await foreach (var item in GetVs())
+            //    {
+            //        Console.WriteLine(item);
+            //        await Task.Delay(3000);
+            //    }
+
+            //}).Start();
+
+            //await Task.Delay(-1);
             ShowInfomation();
 
             WebHost.CreateDefaultBuilder()

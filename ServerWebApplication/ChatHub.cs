@@ -1,11 +1,8 @@
-﻿using CoreProxy.Common;
-using DnsClient;
-using DnsClient.Protocol;
+﻿using DnsClient;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using ServerWebApplication;
 using System;
-using System.Buffers;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -14,6 +11,9 @@ namespace SignalRChat.Hubs
 {
     public class ChatHub : Hub
     {
+        private readonly ILogger<ChatHub> logger;
+        private readonly ILookupClient lookupClient;
+
         public ChatHub(ILogger<ChatHub> logger, ILookupClient lookupClient)
         {
             this.logger = logger;
@@ -21,9 +21,8 @@ namespace SignalRChat.Hubs
         }
 
 
-        static System.Collections.Concurrent.ConcurrentDictionary<string, SocketConnect> Tagets = new System.Collections.Concurrent.ConcurrentDictionary<string, SocketConnect>();
-        private readonly ILogger<ChatHub> logger;
-        private readonly ILookupClient lookupClient;
+        private static System.Collections.Concurrent.ConcurrentDictionary<string, SocketConnect> Tagets = new System.Collections.Concurrent.ConcurrentDictionary<string, SocketConnect>();
+
 
         public override async Task OnConnectedAsync()
         {
@@ -33,7 +32,7 @@ namespace SignalRChat.Hubs
                 var record = (await lookupClient.QueryAsync(arr[0], QueryType.A)).Answers.ARecords().FirstOrDefault();
                 if (record != null)
                 {
-                    var target = new SocketConnect();
+                    var target = new SocketConnect(logger);
                     await target.ConnectAsync(record.Address, int.Parse(arr[1]));
                     logger.LogInformation($"成功连接到：{arr[0]} {record.Address}:{arr[1]}");
 
@@ -79,18 +78,15 @@ namespace SignalRChat.Hubs
             {
                 try
                 {
-                    while (true)
+                    await foreach (var data in target.GetRecvDataAsync())
                     {
-                        var readResult = await target.ChannelTcp.Reader.ReadAsync();
                         ////发往浏览器
-                        await browser.SendAsync("ReceiveMessage", readResult);
+                        await browser.SendAsync("ReceiveMessage", data);
                     }
-
-                    //await target.pipe.Reader.CompleteAsync();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("ProcessTargetServer:" + ex.Message);
+                    logger.LogError("ProcessTargetServer:" + ex.Message);
                 }
             }).Start();
         }

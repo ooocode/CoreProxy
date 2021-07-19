@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -38,7 +36,7 @@ namespace CoreProxy.Common
         /// <returns>返回[iv][payload]</returns>
         public static byte[] EncryptAES(byte[] data)
         {
-            if(data == null || data.Length <= 0)
+            if (data == null || data.Length <= 0)
             {
                 throw new Exception("EncryptAES长度<=0");
             }

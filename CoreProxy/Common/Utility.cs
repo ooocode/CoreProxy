@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace CoreProxy.Common
 {
@@ -30,7 +28,7 @@ namespace CoreProxy.Common
         /// <param name="b1"></param>
         /// <param name="b2"></param>
         /// <returns></returns>
-        public static byte[] MergeBytes(byte[] b1,byte[] b2)
+        public static byte[] MergeBytes(byte[] b1, byte[] b2)
         {
             byte[] dest = new byte[b1.Length + b2.Length];
 
@@ -45,7 +43,7 @@ namespace CoreProxy.Common
         /// </summary>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static byte[] RemoveNBytes(byte[] b,int n)
+        public static byte[] RemoveNBytes(byte[] b, int n)
         {
             return b.Skip(n).ToArray();
         }

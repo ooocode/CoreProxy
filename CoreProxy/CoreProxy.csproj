@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
   <TargetFramework>net5.0</TargetFramework>
   <UserSecretsId>ebc9ea2b-27d0-449d-9b30-dd2c40f420bb</UserSecretsId>
+  <ApplicationIcon />
+  <StartupObject />
   </PropertyGroup>
   
   <ItemGroup>
@@ -10,9 +12,10 @@
     <Content Remove="wwwroot\pac.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.6" />
-    <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
-    <PackageReference Include="System.Threading.Channels" Version="5.0.0" />
+    <PackageReference Include="Humanizer.Core.zh-CN" Version="2.11.10" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.8" />
+    <PackageReference Include="Quartz" Version="3.3.2" />
+    <PackageReference Include="Quartz.AspNetCore" Version="3.3.2" />
   </ItemGroup>
 
   <ItemGroup>

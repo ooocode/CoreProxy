@@ -1,10 +1,7 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Connections;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Net.Sockets;
+using Quartz;
 
 
 namespace CoreProxy
@@ -21,35 +18,35 @@ namespace CoreProxy
 
         public void ConfigureServices(IServiceCollection services)
         {
-          
+            //services.AddQuartz(q =>
+            //{
+            //    var jobKey = new JobKey(nameof(SysncActiveDirectoryJob));
+
+            //    //// base quartz scheduler, job and trigger configuration
+            //    q.AddJob<SysncActiveDirectoryJob>(jobKey).AddTrigger(t =>
+            //    {
+            //        t.StartNow().WithSimpleSchedule(x => x
+            //           .WithIntervalInSeconds(1)
+            //           .RepeatForever())
+            //           .ForJob(jobKey);
+            //    });
+            //    // base quartz scheduler, job and trigger configuration
+            //});
+
+            //// ASP.NET Core hosting
+            //services.AddQuartzServer(options =>
+            //{
+            //    // when shutting down we want jobs to complete gracefully
+            //    options.WaitForJobsToComplete = true;
+            //});
+
+            services.AddHostedService<Local>();
         }
 
 
 
         public void Configure(IApplicationBuilder app)
         {
-            using var scope = app.ApplicationServices.CreateScope();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Local>>();
-
-            var listenerFactory = app.ApplicationServices.GetRequiredService<IConnectionListenerFactory>();
-            Task.Run(async () =>
-            {
-                var localListenAddress = Configuration["LocalListenAddress"];
-                if (!int.TryParse(Configuration["LocalListenPort"],out int localPort))
-                {
-                    localPort = 1081;
-                }
-
-                var remoteAddress = Configuration["RemoteConnectAddress"];
-                if (!int.TryParse(Configuration["RemoteConnectPort"], out int remotePort))
-                {
-                    remotePort = 2020;
-                }
-
-                Local local = new Local();
-                await local.StartAsync(logger,listenerFactory,localListenAddress, localPort,remoteAddress,remotePort);
-            });
-
             app.UseStaticFiles();
         }
     }

@@ -1,7 +1,3 @@
-using System;
-using System.Buffers;
-using System.Linq;
-using CoreProxy.Common;
 using DnsClient;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
