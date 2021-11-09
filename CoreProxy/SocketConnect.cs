@@ -1,25 +1,17 @@
-﻿using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Client;
+﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace ServerWebApplication
+namespace CoreProxy
 {
     public class SocketConnect : IAsyncDisposable
     {
-        HubConnection hubConnection;
-        ConnectionContext browser;
+        public HubConnection hubConnection;
 
-        public SocketConnect()
+        public async Task ConnectAsync(string host, int port, string socketTargetAddress, int socketTargetPort)
         {
-
-        }
-
-        public async Task ConnectAsync(string host, int port, ConnectionContext browser, string socketTargetAddress, int socketTargetPort)
-        {
-            this.browser = browser;
             hubConnection = new HubConnectionBuilder()
               .WithUrl($"http://{host}:{port}/chatHub", options =>
                {
@@ -32,22 +24,7 @@ namespace ServerWebApplication
                   builder.SetMinimumLevel(LogLevel.Warning);
               })
               .Build();
-
-            hubConnection.On("ReceiveMessage", async (byte[] data) =>
-            {
-                await browser.Transport.Output.WriteAsync(data);
-            });
-
-            hubConnection.Closed += HubConnection_Closed;
             await hubConnection.StartAsync();
-        }
-
-        private async Task HubConnection_Closed(Exception arg)
-        {
-            if (browser != null)
-            {
-                await browser.Transport.Input.CompleteAsync();
-            }
         }
 
         public async Task SendAsync(ReadOnlyMemory<byte> memory)
@@ -58,8 +35,11 @@ namespace ServerWebApplication
 
         public async ValueTask DisposeAsync()
         {
-            await hubConnection.StopAsync();
-            await hubConnection.DisposeAsync();
+            if (hubConnection != null)
+            {
+                await hubConnection.StopAsync();
+                await hubConnection.DisposeAsync();
+            }
         }
     }
 }

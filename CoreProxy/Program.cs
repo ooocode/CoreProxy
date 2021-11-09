@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Win32;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CoreProxy
 {
-
     public class Program
     {
         static void ShowInfomation()
@@ -19,36 +20,22 @@ namespace CoreProxy
             Console.WriteLine("          --全局代理    http://127.0.0.1:520/global.txt");
         }
 
-        private static async System.Collections.Generic.IAsyncEnumerable<int> GetVs()
+
+        static void Main(string[] args)
         {
-            int index = 0;
-            while (true)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                await Task.Delay(2000);
-                Console.WriteLine(DateTime.Now.ToString());
-                yield return index++;
+                RegistryKey registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
+                registry.SetValue("AutoConfigURL", "http://127.0.0.1:520/pac.txt");
             }
-        }
 
-        static async Task Main(string[] args)
-        {
-            //new Task(async () =>
-            //{
-            //    await foreach (var item in GetVs())
-            //    {
-            //        Console.WriteLine(item);
-            //        await Task.Delay(3000);
-            //    }
-
-            //}).Start();
-
-            //await Task.Delay(-1);
             ShowInfomation();
-
-            WebHost.CreateDefaultBuilder()
-                .UseUrls("http://localhost:520")
-                .UseStartup<Startup>()
-                .Build().Run();
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseUrls("http://localhost:520");
+                    webBuilder.UseStartup<Startup>();
+                }).Build().Run();
         }
     }
 }

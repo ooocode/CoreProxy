@@ -1,9 +1,9 @@
 ﻿using CoreProxy.Common;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ServerWebApplication;
+using Quartz;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -16,12 +16,12 @@ namespace CoreProxy
 {
     public record Message(long Bytes);
 
-    public class Local : BackgroundService
+    [DisallowConcurrentExecution]
+    public class Local : Quartz.IJob
     {
         private string remoteAddress;
         private int remotePort;
         private ILogger<Local> logger;
-
         private readonly IConnectionListenerFactory connectionListenerFactory;
 
         public Local(IConnectionListenerFactory connectionListenerFactory,
@@ -31,6 +31,10 @@ namespace CoreProxy
             this.connectionListenerFactory = connectionListenerFactory;
             this.logger = logger;
             remoteAddress = configuration["RemoteConnectAddress"];
+            if (string.IsNullOrEmpty(remoteAddress))
+            {
+                throw new Exception(nameof(remoteAddress) + " is null");
+            }
             if (!int.TryParse(configuration["RemoteConnectPort"], out int remotePort))
             {
                 remotePort = 2020;
@@ -71,20 +75,34 @@ namespace CoreProxy
                 browser.Transport.Input.AdvanceTo(secondPack.GetPosition(secondPack.Length));
 
                 await using SocketConnect target = new SocketConnect();
-                await target.ConnectAsync(remoteAddress, remotePort, browser, System.Text.Encoding.UTF8.GetString(socket5Result.Address), socket5Result.Port);
+                await target.ConnectAsync(remoteAddress, remotePort, System.Text.Encoding.UTF8.GetString(socket5Result.Address), socket5Result.Port);
+                logger.LogInformation($"连接到{System.Text.Encoding.UTF8.GetString(socket5Result.Address)}:{socket5Result.Port}");
 
-
-                await foreach (var browserData in GetRecvDataAsync(browser))
+                Task taskRecvBrowser = Task.Run(async () =>
                 {
-                    //发送数据到服务器
-                    await target.SendAsync(browserData);
-                }
+                    //获取浏览器数据
+                    await foreach (var browserData in GetRecvDataAsync(browser))
+                    {
+                        //发送数据到服务器
+                        await target.SendAsync(browserData);
+                    }
+                });
 
-                await browser.Transport.Input.CompleteAsync();
+                Task taskRecvServer = Task.Run(async () =>
+                {
+                    //接收服务器数据
+                    await foreach (var browserData in target.hubConnection.StreamAsync<byte[]>("GetTargetServerData"))
+                    {
+                        //发送数据到浏览器
+                        await browser.Transport.Output.WriteAsync(browserData);
+                    }
+                });
+
+                await Task.WhenAll(taskRecvBrowser, taskRecvServer);
             }
             catch (Exception ex)
             {
-                logger.LogError($"处理TcpHandlerAsync出现错误：{ex.InnerException?.Message ?? ex.Message}");
+                logger.LogError(ex, $"处理TcpHandlerAsync出现错误：{ex.InnerException?.Message ?? ex.Message}");
             }
         }
 
@@ -113,9 +131,12 @@ namespace CoreProxy
                     break;
                 }
             }
+
+            await connectionContext.Transport.Input.CompleteAsync();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+
+        public async Task Execute(IJobExecutionContext context)
         {
             try
             {
@@ -127,13 +148,20 @@ namespace CoreProxy
                     ConnectionContext browser = await bind.AcceptAsync();
                     ThreadPool.QueueUserWorkItem(new WaitCallback(async (obj) =>
                     {
-                        await TcpHandlerAsync(browser);
+                        try
+                        {
+                            await TcpHandlerAsync(browser);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex.InnerException?.Message ?? ex.Message);
+                        }
                     }));
                 }
             }
             catch (Exception ex)
             {
-                logger.LogCritical(ex.Message);
+                logger.LogCritical(ex.InnerException?.Message ?? ex.Message);
             }
         }
     }

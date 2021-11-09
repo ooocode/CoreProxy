@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
-
 
 namespace CoreProxy
 {
@@ -18,36 +18,37 @@ namespace CoreProxy
 
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddQuartz(q =>
-            //{
-            //    var jobKey = new JobKey(nameof(SysncActiveDirectoryJob));
+            services.AddQuartz(q =>
+            {
+                q.UseMicrosoftDependencyInjectionJobFactory();
+                var jobKey = new JobKey(nameof(Local));
 
-            //    //// base quartz scheduler, job and trigger configuration
-            //    q.AddJob<SysncActiveDirectoryJob>(jobKey).AddTrigger(t =>
-            //    {
-            //        t.StartNow().WithSimpleSchedule(x => x
-            //           .WithIntervalInSeconds(1)
-            //           .RepeatForever())
-            //           .ForJob(jobKey);
-            //    });
-            //    // base quartz scheduler, job and trigger configuration
-            //});
+                //// base quartz scheduler, job and trigger configuration
+                q.AddJob<Local>(jobKey).AddTrigger(t =>
+                {
+                    t.StartNow().WithSimpleSchedule(x => x
+                       .WithInterval(System.TimeSpan.FromMilliseconds(1))
+                       .RepeatForever())
+                       .ForJob(jobKey);
+                });
+            });
 
-            //// ASP.NET Core hosting
-            //services.AddQuartzServer(options =>
-            //{
-            //    // when shutting down we want jobs to complete gracefully
-            //    options.WaitForJobsToComplete = true;
-            //});
-
-            services.AddHostedService<Local>();
+            services.AddQuartzServer(options =>
+            {
+                options.WaitForJobsToComplete = true;
+            });
         }
 
 
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseStaticFiles();
+            var provider = new FileExtensionContentTypeProvider();
+            provider.Mappings.Add(".pac", "application/octet-stream");
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ContentTypeProvider = provider
+            });
         }
     }
 }

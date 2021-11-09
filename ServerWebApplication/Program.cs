@@ -2,10 +2,9 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-
 namespace ServerWebApplication
 {
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
